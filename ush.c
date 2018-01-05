@@ -9,17 +9,13 @@
 #define delimiters " \n\t"
 #define MAX_BUFFER_SIZE 1024
 
+char prev_directory[1024];
+
 struct ar
 {
 	char **argument;
 };
 
-struct pipelines
-{
-	int fd[2];
-};
-
-char prev_directory[1024];
 void shell_exit()
 {
 	exit(0);
@@ -31,8 +27,7 @@ void shell_cd(char **arguments)
 	getcwd(cwd, sizeof(cwd));
 	if (arguments[1] == NULL)
 	{
-		char *home = getenv("HOME");
-		chdir(home);
+		chdir(getenv("HOME"));
 	}
 	else if (arguments[1][0] == '~')
 	{
@@ -41,7 +36,7 @@ void shell_cd(char **arguments)
 		path++;
 		strcat(dest, path);
 		if (chdir(dest) != 0) {
-			perror("Error");
+			perror(dest);
 		}
 	}
 	else if (arguments[1][0] == '-') 
@@ -55,6 +50,36 @@ void shell_cd(char **arguments)
 	}	
 
 	strcpy(prev_directory, cwd);
+	
+}
+
+void shell_history(int write, char *command, char *historyhome, char **arguments)
+{
+	
+	
+	if (write)
+	{
+		FILE *his = fopen(historyhome, "a");
+		fprintf(his, "%s\n", command);
+		fclose(his);
+	}
+	else
+	{
+		if (arguments[1] != NULL && strcmp(arguments[1], "-c") == 0)
+		{
+			FILE *his = fopen(historyhome, "w");
+			fclose(his);
+			return;
+		}
+		FILE *his = fopen(historyhome, "r");
+		char line[1024];
+		int counter = 1;
+		while (fgets(line, sizeof(line), his) != NULL)
+		{
+			printf("%d %s",counter++, line);
+		}
+		fclose(his);
+	}
 	
 }
 
@@ -177,18 +202,25 @@ int execute_pipeline(char **args, int input, int output)
 
 int main(int argc, char **argv)
 {
+	char historyhome[1024];
 	strcpy(prev_directory, "/");
+	strcpy(historyhome, getenv("HOME"));
+	strcat(historyhome, "/.ush_history");
 	while (1)
 	{
 		char *command;
 		char cwd[1024];
-		getcwd(cwd, sizeof(cwd));
-        char *user = strcat(getenv("USER"), ":");
+		char *user = strcat(getenv("USER"), ":");
         char prompt[1024] = "";
+        
+		getcwd(cwd, sizeof(cwd));
         strcpy(prompt, strcat(cwd, ">"));
 		printf("%s", prompt);
+		
 		command = ush_readline();
+		
 		char **arguments = ush_parser(command);
+		shell_history(1, command, historyhome, arguments);
 		char **count = arguments;
 		int redcount = 0;
 		
@@ -200,11 +232,13 @@ int main(int argc, char **argv)
 			}
 			count++;
 		}
-		char *pipes_redirs[redcount];
+		
 		if (strcmp(arguments[0], "exit") == 0)
 			shell_exit();
 		else if (strcmp(arguments[0], "cd") == 0)
 			shell_cd(arguments);
+		else if (strcmp(arguments[0], "history") == 0)
+			shell_history(0, NULL, historyhome, arguments);
 		else if (redcount > 0)
 		{
 			redcount++;
@@ -216,7 +250,6 @@ int main(int argc, char **argv)
 			{
 				if (strcmp(*args, "|") == 0 || strcmp(*args, ">>") == 0 || strcmp(*args, ">") == 0 || strcmp(*args, "<") == 0)
 				{
-					pipes_redirs[counter] = (char*)args;
 					char **arglist = malloc(end * sizeof(char*));
 					memcpy(arglist, &arguments[start], (end - start) * sizeof(char*));
 					arglist[end - start + 1] = NULL;
