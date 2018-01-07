@@ -1,0 +1,122 @@
+Working:
+The file ush.c contains the source code of the shell. The internal commands (mentioned below) are implemented within this source code. the folder bin contains the binary executables of the external commands. 
+The user input is parsed, and then checked as to whether it is an internal command. If so, it is executed as per the source code in ush.c --
+	- echo: arguments parsed and appropriately printed to stdout (does not support ``)
+	- history: reads hidden file ush_history that is present in the home directory.
+	- cd: Memoization of previous directories visited along with chdir() command in C
+	- pwd: getcwd() command of C
+	- exit: exit()
+For external commands, a child process is created and execv() is used to execute the appropriate binary, after which the child process is terminated and control is returned to the parent process.
+	- ls: makes use of dirent.h
+	- cat: reads a file and prints to stdout
+	- date: uses time.h
+	- mkdir: uses sys/stat.h to determine existence of a directory
+	- rm: uses rmdir(), remove() and dirent.h
+
+Extra:
+	pipelining implemented as well. However for the pipelining commands, I have used the default linux binaries and not the ones I have written
+
+Assumption for options of commands:
+	- The command options are always separated. Example, ls -am would not work, but ls -a -m would work
+
+Internal Commands Implemented:
+
+echo: options - [-n, -e]
+history: options - [-c, <any number>]
+cd: paths = [-, ~, ., .., <any valid filepath>]
+pwd
+exit
+
+Error checks:
+	- history and echo checked for invalid arguments
+	- cd checked for invalid file path
+
+External Commands Implemented:
+
+ls: options - [-a, -m, -1]
+cat: options - [-n, -E]
+date: options - [-u, -R]
+mkdir: options - [-v, -m]
+rm: options - [-v, -d]
+
+Error checks for external commands: 
+	- invalid options
+	- invalid file/folder/directory
+	
+Testcases:
+echo Tecmint is a community of Linux Nerds
+echo -e "Tecmint \bis \ba \bcommunity \bof \bLinux \bNerds"
+echo -e "Tecmint \nis \na \ncommunity \nof \nLinux \nNerds"
+echo -e "Tecmint \tis \ta \tcommunity \tof \tLinux \tNerds"
+echo -e "Tecmint is a community \cof Linux Nerds"
+echo -n Tecmint is a community of Linux Nerds
+echo *
+
+history
+history -c
+history 10
+history 500
+
+cd
+cd ~
+cd .
+cd -
+cd /
+cd /mnt/C/Users/Deepak/Desktop/IIIT
+cd ..
+cd IIIT/OS/../ADA
+
+pwd
+
+exit
+
+ls
+ls -a
+ls -m
+ls -1
+ls -a -m
+ls bin
+ls ../
+
+cat Makefile
+cat -n Makefile
+cat -E Makefile
+cat * 
+
+date
+date -u
+date -R
+
+mkdir hello
+mkdir -v hello2
+mkdir -v -m 0777 hello3
+mkdir hello hello2
+
+rm -d hello
+rm hello.txt
+rm -v hello2
+
+
+Corner Cases:
+echo -y hello (invalid argument)
+echo "hello (incomplete quotes)
+
+cd thisdirdoesnotexit
+cd /
+cd ..
+
+ls thisdirdoesnotexit
+ls -w (invalid argument) 
+
+cat thisfiledoesnotexist
+cat thisisadirectory //do this
+
+date -p (invalid argument)
+
+mkdir hello (already exists)
+mkdir -t hello (invalid argument)
+mkdir -m 1888 hello (invalid mode)
+
+rm -l hello.txt (invalid argument)
+rm hello (cannot remove directory without -d)
+

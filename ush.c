@@ -6,6 +6,7 @@
 #include <string.h>
 #include <pwd.h>
 #include <ctype.h>
+#include <dirent.h>
 
 #define delimiters " \"\n\t\r"
 #define MAX_BUFFER_SIZE 1024
@@ -14,6 +15,7 @@ char prev_directory[1024];
 char *echo_options[3] = {"-n", "-e", "-E"};
 int echo_ops[] = {0, 0, 0};
 
+char *allarguments[11] = {"cd", "echo", "pwd", "exit", "history", "ls", "date", "rm", "mkdir", "help", "cat"};
 
 struct ar
 {
@@ -182,15 +184,28 @@ void shell_pwd()
 	Readline buffer function
 */
 
+char* concat(const char *s1, const char *s2)
+{
+    char *result = malloc(strlen(s1)+strlen(s2)+1);//+1 for the null-terminator
+    //in real code you would check for errors in malloc here
+    strcpy(result, s1);
+    strcat(result, s2);
+    return result;
+}
+
 char *ush_readline()
 {
 	ssize_t buffer_size = 0;
 	char *buffer = NULL;
+	
+	char *paths = {"/mnt/c/Users/Deepak/Desktop/Deepak/IIIT/OS/2016030_UltraSimpleShell/RudimentaryShell/bin/"};
+	
 	getline(&buffer, &buffer_size, stdin);
+	char *buf = concat(paths, buffer);
 	char *pos;
-	if ((pos = strchr(buffer, '\n')) != NULL)
+	if ((pos = strchr(buf, '\n')) != NULL)
    		*pos = '\0';
-	return buffer;
+	return buf;
 	
 }
 
@@ -248,6 +263,53 @@ int ush_parse_echo_options(char **arguments, int size)
 	Echo command
 */
 
+int check(char *source)
+{
+	int i = 0;
+	while (i < strlen(source))
+	{
+		if (source[i] == '-')
+		{
+			++i;
+			while (i < strlen(source))
+			{
+				if (source[i] == 'n' || source[i] == 'E' || source[i] == 'e')
+				{
+					++i;
+					if (source[i] == 'n')
+						echo_ops[0] = 1;
+					else if (source[i] == 'e')
+						echo_ops[1] =1;
+					else if (source[i] == 'E')
+						echo_ops[2] =1;
+					
+					continue;
+				}
+				else
+					return i;
+				++i;
+			}
+		}
+		++i;
+	}
+	return -1;
+}
+
+int check_options_driver(char **argv, int argc)
+{
+	int i = 0;
+	for ( ; i < argc ; ++i)
+	{
+		int p;
+		if ( (p = check(argv[i])) != -1)
+		{
+			fprintf(stderr, "%s%s\n", "Invalid argument: ", argv[i]);
+			return 0;
+		}
+	}
+	return 1;
+}
+
 void exec_echo(char *source, char *final, int *c)
 {
 	if (echo_ops[1] == 0)
@@ -298,7 +360,21 @@ void ush_echo(char **arguments, int index, int total_args)
 	{
 		char *final = malloc(1024 * sizeof(char));
 		exec_echo(arguments[i], final, &echo_ops_c);
-		printf("%s ", final);
+		if (strcmp(arguments[1], "*") == 0)
+		{
+			struct dirent *de; 	
+			DIR *dr;
+			dr = opendir(".");
+			while ((de = readdir(dr)) != NULL)
+			{
+				if(de->d_name[0] != '.')
+				{
+					printf("%s ", de->d_name);
+				}
+			}
+		}
+		else
+			printf("%s ", final);
 		strcpy(final, "");
 		if (echo_ops_c == 1)
 			break;
@@ -319,10 +395,12 @@ void ush_echo(char **arguments, int index, int total_args)
 void execute_command(char **arguments)
 {
 	pid_t pid = fork();
+	//char *const params[] = {"./bin/ls", "-1", "-a", "/mnt/c/Users/Deepak/Desktop/Deepak/IIIT/OS/2016030_UltraSimpleShell/Rudimentary Shell", NULL};
 	if (pid == 0)
 	{
-		execvp(arguments[0], arguments);
-		perror(arguments[0]);
+		execv(arguments[0], arguments);
+		//execvp(arguments[0], arguments);
+		//perror(arguments[0]);
 		exit(0);
 	}
 	else if (pid < 0)
@@ -421,6 +499,19 @@ int count_quotes(char *command)
 
 //---------------------------------------------------------------------------------------------------------------------------------------------------
 
+void substring(char *s, char *sub, int p, int l)
+{
+	int c = 0;
+
+	while (c < l) 
+	{
+  		sub[c] = s[p + c - 1];
+  		c++;
+	}
+	sub[c] = '\0';
+}
+
+
 int main(int argc, char **argv)
 {
 	char historyhome[1024];
@@ -430,6 +521,8 @@ int main(int argc, char **argv)
 	while (1)
 	{
 		char *command;
+		char *commandcopy = malloc(1024 * sizeof(char));
+		strcpy(commandcopy, "");
 		char cwd[1024];
 		char *user = strcat(getenv("USER"), ":");
         char prompt[1024] = "";
@@ -439,6 +532,9 @@ int main(int argc, char **argv)
 		printf("%s", prompt);
 		
 		command = ush_readline();
+		//Command is returned with the path to the exexcutable appeneded to it
+		substring(command, commandcopy, 90, strlen(command) - 89);
+		//substring without path to executables is extracted here and used for pipeline
 		if (count_quotes(command) % 2 != 0)
 		{
 			printf("%s", ">");
@@ -451,11 +547,11 @@ int main(int argc, char **argv)
 			}
 			strcat(command, "\"");
 		}
-		//printf("%s\n", command);
+		
 		char *temp[1024];
-		shell_history(1, command, historyhome, temp);
-		char **arguments = ush_parser(command);
-		//shell_history(1, command, historyhome, arguments);
+		shell_history(1, commandcopy, historyhome, temp);
+		char **arguments = ush_parser(command); //Used for normal commands
+		char **pipearg = ush_parser(commandcopy); //used for pipeline commands
 		char **count = arguments;
 		int redcount = 0, total_args = 0;
 		
@@ -469,33 +565,52 @@ int main(int argc, char **argv)
 			count++;
 		}
 		
-		if (strcmp(arguments[0], "exit") == 0)
+		int g = 0, flag = 0;
+		for ( ; g < 11 ; ++g)
+		{
+			if (!strcmp(pipearg[0], allarguments[g]))
+			{
+				flag = 1;
+				break;
+			}
+		}	
+		if (!flag)
+		{
+			fprintf(stderr, "%s\n", "That command does not exist. Try 'help' to view all commands");
+			continue;
+		}
+		
+		
+		if (strcmp(pipearg[0], "exit") == 0)
 			shell_exit();
-		else if (strcmp(arguments[0], "cd") == 0)
+		else if (strcmp(pipearg[0], "cd") == 0)
 			shell_cd(arguments);
-		else if (strcmp(arguments[0], "history") == 0)
+		else if (strcmp(pipearg[0], "history") == 0)
 			shell_history(0, NULL, historyhome, arguments);
-		else if (strcmp(arguments[0], "pwd") == 0)
+		else if (strcmp(pipearg[0], "pwd") == 0)
 			shell_pwd();
-		else if (strcmp(arguments[0], "echo") == 0)
+		else if (strcmp(pipearg[0], "echo") == 0)
 		{	
+			if (!check_options_driver(pipearg, total_args))
+			{
+				continue;
+			}
 			int index = ush_parse_echo_options(arguments, total_args);
 			ush_echo(arguments, index, total_args);
-			//printf("%d\n", index);
 		}
 		else if (redcount > 0)
 		{
 			redcount++;
 			int counter = 0, end = 0, start = 0;
 			struct ar argument_array[redcount];
-			char **args = arguments;
+			char **args = pipearg;
 			
 			while (*args != NULL)
 			{
 				if (strcmp(*args, "|") == 0 || strcmp(*args, ">>") == 0 || strcmp(*args, ">") == 0 || strcmp(*args, "<") == 0)
 				{
 					char **arglist = malloc(end * sizeof(char*));
-					memcpy(arglist, &arguments[start], (end - start) * sizeof(char*));
+					memcpy(arglist, &pipearg[start], (end - start) * sizeof(char*));
 					arglist[end - start + 1] = NULL;
 					argument_array[counter++].argument = arglist;
 					start = end + 1;
@@ -504,7 +619,7 @@ int main(int argc, char **argv)
 				args++;
 			}
 			char **arglist = malloc(end * sizeof(char*));
-			memcpy(arglist, &arguments[start], (end - start) * sizeof(char*));
+			memcpy(arglist, &pipearg[start], (end - start) * sizeof(char*));
 			argument_array[counter++].argument = arglist;
 
 			int i = 0, input = 0;
