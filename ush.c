@@ -12,10 +12,10 @@
 #define MAX_BUFFER_SIZE 1024
 
 char prev_directory[1024];
-char *echo_options[3] = {"-n", "-e", "-E"};
-int echo_ops[] = {0, 0, 0};
+char *echo_options[4] = {"-n", "-e", "-ne", "-en"};
+int echo_ops[] = {0, 0};
 
-char *allarguments[11] = {"cd", "echo", "pwd", "exit", "history", "ls", "date", "rm", "mkdir", "help", "cat"};
+char *allarguments[12] = {"cd", "echo", "pwd", "exit", "history", "ls", "date", "rm", "mkdir", "help", "cat", "clear"};
 
 struct ar
 {
@@ -197,8 +197,10 @@ char *ush_readline()
 {
 	ssize_t buffer_size = 0;
 	char *buffer = NULL;
-	
-	char *paths = {"/mnt/c/Users/Deepak/Desktop/Deepak/IIIT/OS/2016030_UltraSimpleShell/RudimentaryShell/bin/"};
+	char pathss[1024];
+	getcwd(pathss, 1024);
+
+	char *paths = concat(pathss, "/bin/");
 	
 	getline(&buffer, &buffer_size, stdin);
 	char *buf = concat(paths, buffer);
@@ -243,7 +245,7 @@ int ush_parse_echo_options(char **arguments, int size)
 	for ( ; i < size ; ++i)
 	{
 		int j = 0, flag = 0;
-		for ( ; j < 3 ; ++j)
+		for ( ; j < 4 ; ++j)
 		{
 			if (strcmp(echo_options[j], arguments[i]) == 0)
 			{
@@ -273,20 +275,13 @@ int check(char *source)
 			++i;
 			while (i < strlen(source))
 			{
-				if (source[i] == 'n' || source[i] == 'E' || source[i] == 'e')
-				{
-					++i;
-					if (source[i] == 'n')
-						echo_ops[0] = 1;
-					else if (source[i] == 'e')
-						echo_ops[1] =1;
-					else if (source[i] == 'E')
-						echo_ops[2] =1;
-					
-					continue;
-				}
+
+				if (source[i] == 'n')
+					echo_ops[0] = 1;
+				else if (source[i] == 'e')
+					echo_ops[1] =1;
 				else
-					return i;
+				return i;
 				++i;
 			}
 		}
@@ -395,7 +390,7 @@ void ush_echo(char **arguments, int index, int total_args)
 void execute_command(char **arguments)
 {
 	pid_t pid = fork();
-	//char *const params[] = {"./bin/ls", "-1", "-a", "/mnt/c/Users/Deepak/Desktop/Deepak/IIIT/OS/2016030_UltraSimpleShell/Rudimentary Shell", NULL};
+	
 	if (pid == 0)
 	{
 		execv(arguments[0], arguments);
@@ -483,6 +478,11 @@ int execute_pipeline(char **args, int input, int output)
 	return fd[0];
 }
 
+void shell_clear()
+{
+	system("clear");
+}
+
 //---------------------------------------------------------------------------------------------------------------------------------------------------
 
 /*
@@ -533,7 +533,8 @@ int main(int argc, char **argv)
 		
 		command = ush_readline();
 		//Command is returned with the path to the exexcutable appeneded to it
-		substring(command, commandcopy, 90, strlen(command) - 89);
+		//printf("%d\n", strlen(cwd));
+		substring(command, commandcopy, strlen(cwd) + 5, strlen(command) - strlen(cwd) + 4);
 		//substring without path to executables is extracted here and used for pipeline
 		if (count_quotes(command) % 2 != 0)
 		{
@@ -552,6 +553,7 @@ int main(int argc, char **argv)
 		shell_history(1, commandcopy, historyhome, temp);
 		char **arguments = ush_parser(command); //Used for normal commands
 		char **pipearg = ush_parser(commandcopy); //used for pipeline commands
+		
 		char **count = arguments;
 		int redcount = 0, total_args = 0;
 		
@@ -564,9 +566,9 @@ int main(int argc, char **argv)
 			}
 			count++;
 		}
-		
+
 		int g = 0, flag = 0;
-		for ( ; g < 11 ; ++g)
+		for ( ; g < 12 ; ++g)
 		{
 			if (!strcmp(pipearg[0], allarguments[g]))
 			{
@@ -585,6 +587,8 @@ int main(int argc, char **argv)
 			shell_exit();
 		else if (strcmp(pipearg[0], "cd") == 0)
 			shell_cd(arguments);
+		else if (strcmp(pipearg[0], "clear") == 0)
+			shell_clear();
 		else if (strcmp(pipearg[0], "history") == 0)
 			shell_history(0, NULL, historyhome, arguments);
 		else if (strcmp(pipearg[0], "pwd") == 0)
@@ -621,7 +625,6 @@ int main(int argc, char **argv)
 			char **arglist = malloc(end * sizeof(char*));
 			memcpy(arglist, &pipearg[start], (end - start) * sizeof(char*));
 			argument_array[counter++].argument = arglist;
-
 			int i = 0, input = 0;
 			while(i < redcount)
 			{

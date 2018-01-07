@@ -2,8 +2,8 @@
 #include <dirent.h>
 #include <string.h>
 
-char *ls_options[3] = {"-a", "-m", "-1"};
-int ls_ops[] = {0, 0, 0};
+char *ls_options[4] = {"-a", "-m", "-am", "-ma"};
+int ls_ops[] = {0, 0};
 
 
 int check(char *source)
@@ -16,20 +16,13 @@ int check(char *source)
 			++i;
 			while (i < strlen(source))
 			{
-				if (source[i] == 'a' || source[i] == 'm' || source[i] == '1')
-				{
-					++i;
-					if (source[i] == 'a')
-						ls_ops[0] = 1;
-					else if (source[i] == 'm')
-						ls_ops[1] =1;
-					else if (source[i] == '1')
-						ls_ops[2] =1;
-					continue;
-				}
+				if (source[i] == 'a')
+					ls_ops[0] = 1;
+				else if (source[i] == 'm')
+					ls_ops[1] =1;
 				else
 					return i;
-				++i;
+				i++;
 			}
 		}
 		++i;
@@ -59,7 +52,7 @@ int parse_ls(char **argv, int argc)
 	{
 		int j = 0;
 		int found = 0;
-		for ( ; j < 3 ; ++j)
+		for ( ; j < 4 ; ++j)
 		{
 			if (strcmp(argv[i], ls_options[j]) == 0)
 			{
@@ -99,19 +92,15 @@ int main(int argc, char **argv)
 			{
 				if (ls_ops[1] == 1)
 					printf("%s, ", de->d_name);
-				if (ls_ops[2] == 1)
-					printf("%s\n", de->d_name);	
-				if(ls_ops[1] == 0 && ls_ops[2] == 0)
+				else
 					printf("%s ", de->d_name);
 			}
 		}
 		else
 		{
 			if (ls_ops[1] == 1)
-					printf("%s, ", de->d_name);
-			if (ls_ops[2] == 1)
-				printf("%s\n", de->d_name);	
-			if(ls_ops[1] == 0 && ls_ops[2] == 0)
+				printf("%s, ", de->d_name);
+			else
 				printf("%s ", de->d_name);
 		}
 			

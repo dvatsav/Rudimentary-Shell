@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 
-char *mkdir_options[2] = {"-v", "-m"};
+char *mkdir_options[3] = {"-v", "-m", "-vm"};
 int mkdir_ops[] = {0, 0};
 int mindex;
 
@@ -18,16 +18,10 @@ int check(char *source)
 			++i;
 			while (i < strlen(source))
 			{
-				if (source[i] == 'v' || source[i] == 'm')
-				{
-					++i;
-					if (source[i] == 'v')
-						mkdir_ops[0] = 1;
-					else if (source[i] == 'm')
-						mkdir_ops[1] =1;
-					
-					continue;
-				}
+				if (source[i] == 'v')
+					mkdir_ops[0] = 1;
+				else if (source[i] == 'm')
+					mkdir_ops[1] =1;
 				else
 					return i;
 				++i;
@@ -60,7 +54,7 @@ int parse_mkdir(char **argv, int argc)
 	{
 		int j = 0;
 		int found = 0;
-		for ( ; j < 2 ; ++j)
+		for ( ; j < 3 ; ++j)
 		{
 			
 			if (strcmp(argv[i], mkdir_options[j]) == 0)

@@ -3,7 +3,7 @@
 #include <dirent.h>
 #include <sys/stat.h>
 
-char *cat_options[2] = {"-n", "-E"};
+char *cat_options[4] = {"-n", "-E", "-nE", "-En"};
 int cat_ops[] = {0, 0};
 
 int check(char *source)
@@ -16,16 +16,11 @@ int check(char *source)
 			++i;
 			while (i < strlen(source))
 			{
-				if (source[i] == 'n' || source[i] == 'E')
-				{
-					++i;
-					if (source[i] == 'n')
-						cat_ops[0] = 1;
-					else if (source[i] == 'E')
-						cat_ops[1] =1;
-					
-					continue;
-				}
+				
+				if (source[i] == 'n')
+					cat_ops[0] = 1;
+				else if (source[i] == 'E')
+					cat_ops[1] =1;
 				else
 					return i;
 				++i;
@@ -66,7 +61,7 @@ int parse_cat(char **argv, int argc)
 	{
 		int j = 0;
 		int found = 0;
-		for ( ; j < 2 ; ++j)
+		for ( ; j < 4 ; ++j)
 		{
 			if (strcmp(argv[i], cat_options[j]) == 0)
 			{

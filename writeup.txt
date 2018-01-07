@@ -14,10 +14,13 @@ For external commands, a child process is created and execv() is used to execute
 	- rm: uses rmdir(), remove() and dirent.h
 
 Extra:
-	pipelining implemented as well. However for the pipelining commands, I have used the default linux binaries and not the ones I have written
+	pipelining implemented as well. However for the pipelining commands, I have used the default linux binaries and not the ones I have written. 
+	Assumption:
+		syntax is like: ls | sort, where there is a space between pipeline and command
 
-Assumption for options of commands:
-	- The command options are always separated. Example, ls -am would not work, but ls -a -m would work
+Note:
+	system("clear") used for convenience
+	bin file must be placed in same directory as ush.c
 
 Internal Commands Implemented:
 
@@ -31,9 +34,11 @@ Error checks:
 	- history and echo checked for invalid arguments
 	- cd checked for invalid file path
 
+Assumption for cd:
+	- No gaps in file names
 External Commands Implemented:
 
-ls: options - [-a, -m, -1]
+ls: options - [-a, -m]
 cat: options - [-n, -E]
 date: options - [-u, -R]
 mkdir: options - [-v, -m]
@@ -73,7 +78,6 @@ exit
 ls
 ls -a
 ls -m
-ls -1
 ls -a -m
 ls bin
 ls ../

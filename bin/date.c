@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 
-char *date_options[2] = {"-R", "-u"};
+char *date_options[4] = {"-R", "-u", "-uR", "-Ru"};
 int date_ops[] = {0, 0};
 
 int check(char *source)
@@ -15,16 +15,10 @@ int check(char *source)
 			++i;
 			while (i < strlen(source))
 			{
-				if (source[i] == 'u' || source[i] == 'R')
-				{
-					++i;
-					if (source[i] == 'u')
-						date_ops[0] = 1;
-					else if (source[i] == 'R')
-						date_ops[1] =1;
-					
-					continue;
-				}
+				if (source[i] == 'R')
+					date_ops[0] = 1;
+				else if (source[i] == 'u')
+					date_ops[1] =1;
 				else
 					return i;
 				++i;
@@ -58,7 +52,7 @@ int parse_date(char **argv, int argc)
 	{
 		int j = 0;
 		int found = 0;
-		for ( ; j < 2 ; ++j)
+		for ( ; j < 4 ; ++j)
 		{
 			if (strcmp(argv[i], date_options[j]) == 0)
 			{

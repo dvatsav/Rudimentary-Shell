@@ -4,7 +4,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-char *rm_options[2] = {"-v", "-d"};
+char *rm_options[4] = {"-v", "-d", "-vd", "-dv"};
 int rm_ops[] = {0, 0};
 
 int check(char *source)
@@ -17,16 +17,10 @@ int check(char *source)
 			++i;
 			while (i < strlen(source))
 			{
-				if (source[i] == 'v' || source[i] == 'd')
-				{
-					++i;
-					if (source[i] == 'v')
-						rm_ops[0] = 1;
-					else if (source[i] == 'd')
-						rm_ops[1] =1;
-					
-					continue;
-				}
+				if (source[i] == 'v')
+					rm_ops[0] = 1;
+				else if (source[i] == 'd')
+					rm_ops[1] =1;
 				else
 					return i;
 				++i;
@@ -59,7 +53,7 @@ int parse_rm(char **argv, int argc)
 	{
 		int j = 0;
 		int found = 0;
-		for ( ; j < 2 ; ++j)
+		for ( ; j < 4 ; ++j)
 		{
 			if (strcmp(argv[i], rm_options[j]) == 0)
 			{
