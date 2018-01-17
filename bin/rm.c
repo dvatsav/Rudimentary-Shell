@@ -3,6 +3,8 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 char *rm_options[4] = {"-v", "-d", "-vd", "-dv"};
 int rm_ops[] = {0, 0};
@@ -103,36 +105,49 @@ int main(int argc, char **argv)
 	if (!check_options_driver(argv, argc))
 		return 0;
 	int index = parse_rm(argv, argc);
-	if (rm_ops[1] == 1)
+	int i = index;
+	for ( ; i < argc ; ++i)
 	{
-		int result = dir_entries(argv[index]);
-		if (result == -1)
+		if (rm_ops[1] == 1)
 		{
-			fprintf(stderr, "%s\n", "mkdir: Invalid directory name");
-			return 0;
+			int result = dir_entries(argv[i]);
+			if (is_regular_file(argv[i]))
+			{
+				remove(argv[i]);
+				if (rm_ops[0] == 1)
+					printf("%s%s%s\n", "removed file: '", argv[i], "'");	
+				continue;
+			}
+
+			if (result == -1)
+			{
+				fprintf(stderr, "%s%s\n", "rm: Invalid directory name: ", argv[i]);
+				continue;
+			}
+			else if (result > 0)
+			{
+				//chdir(argv[index]);
+				fprintf(stderr, "%s%s\n", "rm: Directory not empty: ", argv[i]);
+				continue;
+			}
+			else
+			{
+				if (rm_ops[0] == 1)
+					printf("%s%s%s\n", "removed directory: '", argv[i], "'");
+				rmdir(argv[i]);
+			}
 		}
-		else if (result > 0)
+		else if ( !is_regular_file(argv[i]) && rm_ops[1] == 0)
 		{
-			chdir(argv[index]);
-			fprintf(stderr, "%s\n", "mkdir: Directory not empty");
-			return 0;
+			fprintf(stderr, "%s%s\n", "Error: File does not exist / use -d if you want to delete an empty folder: ", argv[i]);
 		}
-		else
+		else if (is_regular_file(argv[i]))
 		{
+			remove(argv[i]);
 			if (rm_ops[0] == 1)
-				printf("%s%s%s\n", "removed directory: '", argv[index], "'");
-			rmdir(argv[index]);
-		}
+				printf("%s%s%s\n", "removed file: '", argv[i], "'");	
+		}	
 	}
-	else if ( !is_regular_file(argv[index]) && rm_ops[1] == 0)
-	{
-		fprintf(stderr, "%s\n", "Error: File does not exist / use -d if you want to delete an empty folder");
-	}
-	else if (is_regular_file(argv[index]))
-	{
-		remove(argv[index]);
-		if (rm_ops[0] == 1)
-			printf("%s%s%s\n", "removed file: '", argv[index], "'");	
-	}
+	
 	return 0;
 }

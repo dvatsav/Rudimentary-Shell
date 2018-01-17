@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 char *mkdir_options[3] = {"-v", "-m", "-vm"};
 int mkdir_ops[] = {0, 0};
@@ -110,6 +111,19 @@ int check_valid_mode(char *mode)
 	
 }
 
+int str_to_int(char num[1024])
+{
+	int len = strlen(num);
+	int dec = 0, i = 0;
+	for(i = 0 ; i < len ; ++i)
+	{
+		dec = dec * 10 + (num[i] - '0');
+	}
+
+	return dec;
+
+}
+
 int main(int argc, char **argv)
 {
 	if (!check_options_driver(argv, argc))
@@ -124,7 +138,14 @@ int main(int argc, char **argv)
 			if (mkdir_ops[1] == 1)
 				{
 					if (check_valid_mode(argv[mindex + 1]))
-						mkdir(argv[i], (mode_t)argv[mindex + 1]);
+					{
+						umask(0);
+						printf("%d\n", str_to_int(argv[mindex + 1]));
+						char *ptr;
+						long ret = strtoul(argv[mindex + 1], &ptr, 8); 
+						mkdir(argv[i], ret);
+						umask(0022);
+					}
 					else
 					{
 						fprintf(stderr, "%s%s\n", "mkdir: invalid mode ", argv[mindex + 1]);

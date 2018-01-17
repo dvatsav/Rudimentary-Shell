@@ -11,7 +11,7 @@ For external commands, a child process is created and execv() is used to execute
 	- cat: reads a file and prints to stdout
 	- date: uses time.h
 	- mkdir: uses sys/stat.h to determine existence of a directory
-	- rm: uses rmdir(), remove() and dirent.h
+	- rm: uses rmdir(), remove() and dirent.h. 
 
 Extra:
 	pipelining implemented as well. However for the pipelining commands, I have used the default linux binaries and not the ones I have written. 
@@ -99,6 +99,7 @@ mkdir hello hello2
 rm -d hello
 rm hello.txt
 rm -v hello2
+rm -d hello hello.txt (one directory and one file)
 
 
 Corner Cases:

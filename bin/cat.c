@@ -107,59 +107,69 @@ int main(int argc, char **argv)
 		return 0;
 	}
 	int index = parse_cat(argv, argc);
-	if (isDirectory(argv[index]))
+	while (index < argc)
 	{
-		fprintf(stderr, "%s%s%s\n", "cat: ", argv[index], " is a directory");
-	}
-	FILE *fp = fopen(argv[index], "r");
-	if (fp == NULL)
-	{
-		fprintf(stderr, "%s\n", "file does not exist");
-		return 0;
-	}
-	if (cat_ops[0] == 0 && cat_ops[1] == 0)
-	{
-		char c = fgetc(fp);
-		while (c != EOF)
+		if (!strcmp(argv[index], "-n") || !strcmp(argv[index], "-E") || !strcmp(argv[index], "-nE") || !strcmp(argv[index], "-En"))
 		{
-			printf ("%c", c);
-			c = fgetc(fp);
-		}	
-	}
-	else if (cat_ops[0] == 1)
-	{
-		char line[1024];
-		
-		
-		int counter = 1;
-		while (fgets(line, 1024, fp) != NULL)
-		{
-			char *pos;
-			if ((pos = strchr(line, '\n')) != NULL)
-   				*pos = '\0';
-			if (cat_ops[1] == 1)
-			{
-				printf("%d %s%s", counter++, line, "$");
-			}
-			else
-			{
-				printf("%d %s", counter++, line);
-			}
-			printf("\n");
+			index++;
+			continue;
 		}
-	}
-	else
-	{
-		char line[1024];
-		while (fgets(line, 1024, fp) != NULL)
+		if (isDirectory(argv[index]))
 		{
-			char *pos;
-			if ((pos = strchr(line, '\n')) != NULL)
-   				*pos = '\0';
-			printf("%s%s\n", line, "$");
+			fprintf(stderr, "%s%s%s\n", "cat: ", argv[index], " is a directory");
 		}
+		FILE *fp = fopen(argv[index], "r");
+		if (fp == NULL)
+		{
+			fprintf(stderr, "%s\n", "file does not exist");
+			return 0;
+		}
+		if (cat_ops[0] == 0 && cat_ops[1] == 0)
+		{
+			char c = fgetc(fp);
+			while (c != EOF)
+			{
+				printf ("%c", c);
+				c = fgetc(fp);
+			}	
+		}
+		else if (cat_ops[0] == 1)
+		{
+			char line[1024];
+			
+			
+			int counter = 1;
+			while (fgets(line, 1024, fp) != NULL)
+			{
+				char *pos;
+				if ((pos = strchr(line, '\n')) != NULL)
+	   				*pos = '\0';
+				if (cat_ops[1] == 1)
+				{
+					printf("%d %s%s", counter++, line, "$");
+				}
+				else
+				{
+					printf("%d %s", counter++, line);
+				}
+				printf("\n");
+			}
+		}
+		else
+		{
+			char line[1024];
+			while (fgets(line, 1024, fp) != NULL)
+			{
+				char *pos;
+				if ((pos = strchr(line, '\n')) != NULL)
+	   				*pos = '\0';
+				printf("%s%s\n", line, "$");
+			}
+		}
+		fclose(fp);	
+		index++;
 	}
-	fclose(fp);
+		
 	
 	return 0;
 }
