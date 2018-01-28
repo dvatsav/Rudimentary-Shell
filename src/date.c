@@ -72,8 +72,14 @@ int main(int argc, char **argv)
 {
 	if (!check_options_driver(argv, argc))
 		return 0;
+
 	time_t t = time(NULL);
 	int index = parse_date(argv, argc);
+	if (argc > 1 && (date_ops[0] == 0 && date_ops[1] == 0))
+	{
+		fprintf(stderr, "%s\n", "Invalid date");
+		return 0;
+	}
 	struct tm *tm;
 	if (date_ops[0] == 0)
 	{

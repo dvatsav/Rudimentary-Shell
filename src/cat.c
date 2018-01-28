@@ -2,6 +2,9 @@
 #include <string.h>
 #include <dirent.h>
 #include <sys/stat.h>
+#include <signal.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 char *cat_options[4] = {"-n", "-E", "-nE", "-En"};
 int cat_ops[] = {0, 0};
@@ -77,10 +80,33 @@ int parse_cat(char **argv, int argc)
 	return argc;
 }
 
+char *ush_readline()
+{
+	ssize_t buffer_size = 0; 
+	char *buffer = NULL;
+
+	getline(&buffer, &buffer_size, stdin);
+	char *pos;
+	if ((pos = strchr(buffer, '\n')) != NULL)
+   		*pos = '\0';
+	return buffer;
+	
+}
+
 int main(int argc, char **argv)
 {
 	if (!check_options_driver(argv, argc))
 		return 0;
+	if (argc == 1)
+	{
+		while(1)
+		{
+			char *command = ush_readline();
+			printf("%s\n", command);
+
+		}
+		return 0;
+	}
 	if (!strcmp(argv[1], "*"))
 	{
 		struct dirent *de; 	

@@ -84,7 +84,7 @@ int dir_entries(char *foldername)
 		counter++;
 	return counter;
 }
-
+//geeksforgeeks.com
 int isDirectory(const char *path) {
    struct stat statbuf;
    if (stat(path, &statbuf) != 0)

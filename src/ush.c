@@ -7,13 +7,23 @@
 #include <pwd.h>
 #include <ctype.h>
 #include <dirent.h>
+#include <signal.h>
 
 #define delimiters " \"\n\t\r"
 #define MAX_BUFFER_SIZE 1024
+#define RED     "\x1b[31m"
+#define GREEN   "\x1b[32m"
+#define YELLOW  "\x1b[33m"
+#define BLUE    "\x1b[34m"
+#define MAGENTA "\x1b[35m"
+#define CYAN    "\x1b[36m"
+#define RESET   "\x1b[0m"
 
 char prev_directory[1024];
 char *echo_options[4] = {"-n", "-e", "-ne", "-en"};
 int echo_ops[] = {0, 0};
+
+char global_path[1000];
 
 char *allarguments[12] = {"cd", "echo", "pwd", "exit", "history", "ls", "date", "rm", "mkdir", "help", "cat", "clear"};
 
@@ -21,6 +31,12 @@ struct ar
 {
 	char **argument;
 };
+int inputhandler = 0;
+void sig_handler(int signo)
+{
+     printf("%s", "\n");
+     inputhandler = 1;
+}
 
 //---------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -197,18 +213,19 @@ char *ush_readline()
 {
 	ssize_t buffer_size = 0;
 	char *buffer = NULL;
-	char pathss[1024];
-	getcwd(pathss, 1024);
-
-	char *paths = concat(pathss, "/bin/");
-	
 	getline(&buffer, &buffer_size, stdin);
-	char *buf = concat(paths, buffer);
 	char *pos;
-	if ((pos = strchr(buf, '\n')) != NULL)
+	if ((pos = strchr(buffer, '\n')) != NULL)
    		*pos = '\0';
-	return buf;
+	return buffer;
 	
+}
+
+char *concat_paths(char *buffer)
+{
+	char *paths = concat(global_path, "/");
+	char *buf = concat(paths, buffer);
+	return buf;
 }
 
 //---------------------------------------------------------------------------------------------------------------------------------------------------
@@ -514,12 +531,21 @@ void substring(char *s, char *sub, int p, int l)
 
 int main(int argc, char **argv)
 {
+	if (signal(SIGINT, &sig_handler) == SIG_ERR)
+  		printf("\ncan't catch SIGINT\n");
 	char historyhome[1024];
+	getcwd(global_path, sizeof(global_path));
 	strcpy(prev_directory, "/");
 	strcpy(historyhome, getenv("HOME"));
 	strcat(historyhome, "/.ush_history");
 	while (1)
 	{
+		
+		if (inputhandler == 1)
+		{
+			inputhandler = 0;
+			continue;
+		}
 		char *command;
 		char *commandcopy = malloc(1024 * sizeof(char));
 		strcpy(commandcopy, "");
@@ -529,23 +555,32 @@ int main(int argc, char **argv)
         
 		getcwd(cwd, sizeof(cwd));
         strcpy(prompt, strcat(cwd, ">"));
-		printf("%s", prompt);
+		printf(CYAN "%s" RESET, prompt);
 		
 		command = ush_readline();
+		commandcopy = strdup(command);
+		command = concat_paths(command);
 		//Command is returned with the path to the exexcutable appeneded to it
 		//printf("%d\n", strlen(cwd));
-		substring(command, commandcopy, strlen(cwd) + 5, strlen(command) - strlen(cwd) + 4);
+		//substring(command, commandcopy, strlen(cwd) + 5, strlen(command) - strlen(cwd) + 4);
+		if (strlen(commandcopy) == 0)
+		{
+			continue;
+		}
 		//substring without path to executables is extracted here and used for pipeline
+		
 		if (count_quotes(command) % 2 != 0)
 		{
-			printf("%s", ">");
-			char *extra = ush_readline();
-			while(count_quotes(extra) % 2 == 0)
+			//printf("%s\n", command);
+			char *extra;
+			do
 			{
 				printf("%s", ">");
-				strcat(command, extra);
 				extra = ush_readline();
-			}
+				strcat(command, extra);
+				//printf("%s\n", command);
+			}while(count_quotes(extra) % 2 == 0);
+
 			strcat(command, "\"");
 		}
 		
